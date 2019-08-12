@@ -48,9 +48,11 @@ def DeepFM(feature_dim_dict, embedding_size=8,
     deep_emb_list, linear_logit, inputs_list = get_inputs_embedding(
         feature_dim_dict, embedding_size, l2_reg_embedding, l2_reg_linear, init_std, seed)
 
-    fm_input = concat_fun(deep_emb_list,axis=1)
-    deep_input = tf.keras.layers.Flatten()(fm_input)
-    fm_out = FM()(fm_input)
+    #
+    fm_input = concat_fun(deep_emb_list,axis=1) #?,6,8  6个feature，embedding 8 dim
+    deep_input = tf.keras.layers.Flatten()(fm_input) # ?,48
+    fm_out = FM()(fm_input) #liy - 完成FM的所有工作(batchsize, fieldsize, emd_size) -> (batchsize, 1)
+    # 每个dim做embedding ，然后再过DNN层
     deep_out = MLP(hidden_size, activation, l2_reg_deep, keep_prob,
                    use_bn, seed)(deep_input)
     deep_logit = tf.keras.layers.Dense(
@@ -63,6 +65,7 @@ def DeepFM(feature_dim_dict, embedding_size=8,
     elif len(hidden_size) > 0 and use_fm == False:  # linear +　Deep
         final_logit = tf.keras.layers.add([linear_logit, deep_logit])
     elif len(hidden_size) > 0 and use_fm == True:  # linear + FM + Deep
+        #liy :它这里每个layer是包含这个layer和后面的连接权重和激活函数了
         final_logit = tf.keras.layers.add([linear_logit, fm_out, deep_logit])
     else:
         raise NotImplementedError

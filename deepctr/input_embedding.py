@@ -9,6 +9,7 @@ from .utils import get_linear_logit
 
 
 def create_input_dict(feature_dim_dict, prefix=''):
+    #liy - 感觉这个keras Input就是一个dim
     sparse_input = {feat: Input(shape=(1,), name=prefix+'sparse_' + str(i) + '-' + feat) for i, feat in
                     enumerate(feature_dim_dict["sparse"])}
     dense_input = {feat: Input(shape=(1,), name=prefix+'dense_' + str(i) + '-' + feat) for i, feat in
@@ -109,7 +110,7 @@ def merge_sequence_input(embedding_dict, embed_list, sequence_input_dict, sequen
 
 
 def get_embedding_vec_list(embedding_dict, input_dict):
-
+    # liy - 看了一下底层，就是用call函数封装了一下embedding lookup的操作
     return [embedding_dict[feat](v)
             for feat, v in input_dict.items()]
 
@@ -131,23 +132,30 @@ def get_inputs_list(inputs):
 
 def get_inputs_embedding(feature_dim_dict, embedding_size, l2_reg_embedding, l2_reg_linear, init_std, seed, include_linear=True):
     sparse_input_dict, dense_input_dict = create_input_dict(feature_dim_dict)
+    # DeepFM等算法没有Sequence input
     sequence_input_dict, sequence_pooling_dict, sequence_input_len_dict, sequence_max_len_dict = create_sequence_input_dict(
         feature_dim_dict)
 
+    # liy 封装了embedding lookup的操作，这里的embedding size是10 - deep sparse embedding
     deep_sparse_emb_dict = create_embedding_dict(
         feature_dim_dict, embedding_size, init_std, seed, l2_reg_embedding)
 
+    # 这个应该就是embedding lookup查表的结果
     deep_emb_list = get_embedding_vec_list(
         deep_sparse_emb_dict, sparse_input_dict)
 
+    #liy - 对于deepFM来说没什么操作
     deep_emb_list = merge_sequence_input(deep_sparse_emb_dict, deep_emb_list, sequence_input_dict,
                                          sequence_input_len_dict, sequence_max_len_dict, sequence_pooling_dict)
 
+    #DeepFM demo代码里面没有dense input 这个函数没做事
     deep_emb_list = merge_dense_input(
         dense_input_dict, deep_emb_list, embedding_size, l2_reg_embedding)
     if include_linear:
+        #liy 注意这里embedding size是1, linear sparse embedding
         linear_sparse_emb_dict = create_embedding_dict(
             feature_dim_dict, 1, init_std, seed, l2_reg_linear, 'linear')
+        # embedding lookup
         linear_emb_list = get_embedding_vec_list(
             linear_sparse_emb_dict, sparse_input_dict)
         linear_emb_list = merge_sequence_input(linear_sparse_emb_dict, linear_emb_list, sequence_input_dict,

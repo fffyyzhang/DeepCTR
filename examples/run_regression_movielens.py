@@ -5,14 +5,17 @@ from deepctr.models import DeepFM
 if __name__ == "__main__":
 
     data = pd.read_csv("./movielens_sample.txt")
+    #age 也当成了sparse特征来处理了? 确实是离散的数据，，因为这个是已经处理过的age，就几个取值
     sparse_features = ["movie_id", "user_id",
                        "gender", "age", "occupation", "zip"]
     target = ['rating']
 
     # 1.Label Encoding for sparse features,and do simple Transformation for dense features
+    # label encoder 就是编号
     for feat in sparse_features:
         lbe = LabelEncoder()
         data[feat] = lbe.fit_transform(data[feat])
+
     # 2.count #unique features for each sparse field
     sparse_feature_dim = {feat: data[feat].nunique()
                           for feat in sparse_features}
